@@ -1,0 +1,33 @@
+name: Deploy Java Application
+
+on:
+  push:
+    branches:
+      - main  # Thay đổi theo nhánh bạn muốn triển khai
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'  # Thay đổi theo phiên bản JDK của bạn
+          distribution: 'adopt'
+
+      - name: Build with Maven
+        run: mvn clean install  # Xây dựng ứng dụng
+
+      - name: Deploy to Server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          HOST: ${{ secrets.HOST }}
+          USER: ${{ secrets.USER }}
+        run: |
+          echo "$SSH_PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          rsync -r --delete-after ./target/ $USER@$HOST:/path/to/deploy/
