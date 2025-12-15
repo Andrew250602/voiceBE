@@ -1,48 +1,40 @@
-name: Deploy Java Application
+name: CI
 
 on:
   push:
     branches:
-      - main  # Thay đổi theo nhánh bạn muốn triển khai
+      - main
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
+    services:
+      ssh-server:
+        build:
+          context: .
+          dockerfile: Dockerfile
+        ports:
+          - 22:22
+        env:
+          ROOT_PASSWORD: password  # Có thể sử dụng secret trong thực tế
+
     steps:
-      - name: Checkout code
+      - name: Kiểm tra mã nguồn
         uses: actions/checkout@v2
 
-      - name: Set up JDK
-        uses: actions/setup-java@v2
-        with:
-          java-version: '17'  # Thay đổi theo phiên bản JDK của bạn
-          distribution: 'adopt'
-
-      - name: Build with Maven
-        run: mvn clean install  # Xây dựng ứng dụng
-
-      - name: Deploy to Server
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          HOST: ${{ secrets.HOST }}
-          USER: ${{ secrets.USER }}
+      - name: Khởi động SSH Server
         run: |
-          echo "Connecting to $HOST"
-          echo "Host value: $HOST"
-          ping -c 3 $HOST || echo "Ping failed"
-          echo "SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY"
-          echo "USER: $USER"
-          
-          # In ra giá trị của HOST
-          echo "Attempting to ping $HOST"
-          ping -c 3 $HOST || echo "Ping failed"
+          docker run -d -p 2222:22 ssh-server
+          # Chờ một chút để dịch vụ sẵn sàng
+          sleep 10
 
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
-          chmod 600 private_key.pem
+      - name: Kết nối đến SSH Server
+        run: |
+          ssh root@localhost -p 2222 "echo 'Connection successful!'"
+          # Bạn có thể chạy thêm các lệnh khác trên SSH server từ đây
 
-          # Thêm dòng này để chấp nhận host key
-          mkdir -p ~/.ssh
-          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
-
-          rsync -r --delete-after ./target/ $USER@$HOST:/path/to/deploy/
+      - name: Dọn dẹp
+        if: always()
+        run: |
+          docker stop $(docker ps -q --filter ancestor=ssh-server)
