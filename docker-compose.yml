@@ -10,7 +10,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
     # 1. THÊM HEALTH CHECK CHO MONGODB
     healthcheck:
-      test: [ "cmd", "mongo", "--eval", "db.runCommand({ping: 1})" ]
+      # SỬA LẠI DÒNG TEST NÀY ĐỂ THÊM TỪ KHÓA CMD VÀO ĐẦU MẢNG
+      test: [ "cmd", "mongosh", "--eval", "db.runCommand({ping: 1})" ]
       interval: 10s
       timeout: 5s
       retries: 5
