@@ -3,11 +3,10 @@ name: CI/Integration Test (Free)
 on:
   pull_request:
     branches: [main, dev]
-  push: # BỔ SUNG TRIGGER NÀY
+  push:
     branches: [main, dev]
 jobs:
   integration-test:
-    # Sử dụng DIND (Docker-in-Docker) để chạy Docker Compose bên trong Runner
     runs-on: ubuntu-latest
 
     steps:
@@ -24,35 +23,21 @@ jobs:
       # 2. Build ứng dụng Java (Tạo JAR)
       - name: Build with Maven
         run: mvn clean install -DskipTests
-      # BƯỚC BỔ SUNG: XÁC NHẬN SỰ TỒN TẠI CỦA FILE JAR
-      - name: Verify JAR File Existence
-        run: |
-          JAR_PATH="target/*.jar app.jar" # Tên file sai ở đây
-          echo "Checking for $JAR_PATH..."
-          
-          # Liệt kê tất cả nội dung trong target/ để debug
-          echo "Contents of target/:"
-          ls -l target/
-          
-          # Kiểm tra sự tồn tại của file
-          if [ -f "$JAR_PATH" ]; then
-            echo "✅ File $JAR_PATH found. Proceeding to Docker Build."
-          else
-            echo "❌ ERROR: File $JAR_PATH was NOT found after Maven Build."
-            echo "Possible reasons: Maven build failed, or file name is incorrect."
-            exit 1 # Dừng workflow nếu file không tồn tại
-          fi
-      # 3. Build Docker Image cho ứng dụng Java (Cần Dockerfile)
+
+      # BỎ BƯỚC Verify JAR File Existence ĐÃ BỊ LỖI CÚ PHÁP SHELL
+
+      # 3. Build Docker Image cho ứng dụng Java (Sử dụng Dockerfile đã sửa COPY target/*.jar)
       - name: Build Java App Docker Image
-        run: docker build -t my-java-app:latest . -f Dockerfile # Build local image
+        run: docker build -t my-java-app:latest . -f Dockerfile
 
-      # 4. Chạy Docker Compose (Sử dụng file docker-compose.yml local)
+      # 4. Chạy Docker Compose (ĐÃ SỬA CÚ PHÁP)
       - name: Start services (Java App + MongoDB)
-        run: docker-compose up -d
+        run: docker compose up -d
 
-      # 5. Health Check (Kiểm tra xem ứng dụng có hoạt động không)
+      # 5. Health Check
       - name: Wait for Java Application Health Check
         run: |
+          # ... (Phần Health check không cần sửa)
           APP_URL="http://localhost:8080/actuator/health"
           echo "Waiting for $APP_URL..."
           for i in $(seq 1 20); do
@@ -66,7 +51,7 @@ jobs:
           echo "❌ App failed to start."
           exit 1
 
-      # 6. Dọn dẹp (Rất quan trọng để giải phóng tài nguyên Runner)
+      # 6. Dọn dẹp (ĐÃ SỬA CÚ PHÁP)
       - name: Stop services
-        if: always() # Luôn chạy bước này ngay cả khi các bước trước thất bại
-        run: docker-compose down
+        if: always()
+        run: docker compose down
