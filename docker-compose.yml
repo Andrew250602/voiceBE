@@ -8,9 +8,16 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+    # 1. THÊM HEALTH CHECK CHO MONGODB
+    healthcheck:
+      test: [ "cmd", "mongo", "--eval", "db.runCommand({ping: 1})" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mongo-express: # <-- Service 2 (Công cụ quản lý MongoDB)
     image: mongo-express
+
     ports:
       - "8081:8081"
     environment:
@@ -24,7 +31,9 @@ services:
     ports:
       - "8080:8080" # Cổng ứng dụng Java được ánh xạ ra Host
     depends_on:
-      - mongodb # <-- Đảm bảo MongoDB khởi động trước ứng dụng Java
+      mongodb:
+        condition: service_healthy # Chỉ chạy khi MongoDB sẵn sàng
+
     environment:
       # Cấu hình kết nối cho ứng dụng Java:
       # SỬ DỤNG TÊN SERVICE 'mongodb' làm Host, không phải 'localhost' hoặc IP
