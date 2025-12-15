@@ -33,12 +33,25 @@ jobs:
       # 4. Chạy Docker Compose (ĐÃ SỬA CÚ PHÁP)
       - name: Start services (Java App + MongoDB)
         run: docker compose up -d
-
+      # >>> BƯỚC MỚI: KIỂM TRA LOG CONTAINER JAVA <<<
+      - name: Check Java Application Logs
+        run: |
+          echo "--- CHECKING JAVA APP LOGS (Start) ---"
+          # Tên container cần phải khớp với container_name trong docker-compose.yml
+          docker logs java_app_test 
+          
+          # Kiểm tra trạng thái thoát (Exit Code) của container
+          EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' java_app_test)
+          if [ "$EXIT_CODE" -ne 0 ]; then 
+            echo "--- ERROR: JAVA CONTAINER CRASHED (Exit Code: $EXIT_CODE) ---"
+          fi
+          echo "-------------------------------------"
+          sleep 5 # Chờ thêm 5s để đảm bảo log khởi động kịp in ra
       # 5. Health Check
       - name: Wait for Java Application Health Check
         run: |
           # ... (Phần Health check không cần sửa)
-          APP_URL="http://localhost:8080/api/auth/create"
+          APP_URL="http://localhost:8080/"
           echo "Waiting for $APP_URL..."
           for i in $(seq 1 20); do
             STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET $APP_URL)
