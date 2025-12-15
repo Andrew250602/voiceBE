@@ -28,7 +28,7 @@ jobs:
 
       # 3. Build Docker Image cho ứng dụng Java (Sử dụng Dockerfile đã sửa COPY target/*.jar)
       - name: Build Java App Docker Image
-        run: docker build -t my-java-app:latest . -f Dockerfile
+        run: docker build -t my-java-app:latest . -f Dockerfile # Tag: my-java-app:latest
 
       # 4. Chạy Docker Compose (ĐÃ SỬA CÚ PHÁP)
       - name: Start services (Java App + MongoDB)

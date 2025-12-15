@@ -19,7 +19,8 @@ services:
       ME_CONFIG_MONGODB_SERVER: mongodb # <-- RẤT QUAN TRỌNG: Sử dụng tên service 'mongodb' làm hostname
 
   my-java-app-service: # <-- Service 3 (Ứng dụng Java)
-    container_name: my_java_app_container
+    container_name: java_app_test
+    image: my-java-app:latest # <<< DÒNG NÀY PHẢI CÓ VÀ PHẢI KHỚP!
     ports:
       - "8080:8080" # Cổng ứng dụng Java được ánh xạ ra Host
     depends_on:
