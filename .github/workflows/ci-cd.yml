@@ -27,7 +27,7 @@ jobs:
       # BƯỚC BỔ SUNG: XÁC NHẬN SỰ TỒN TẠI CỦA FILE JAR
       - name: Verify JAR File Existence
         run: |
-          JAR_PATH="target/voiceBE-1.0.0-SNAPSHOT.jar" # Tên file sai ở đây
+          JAR_PATH="target/*.jar app.jar" # Tên file sai ở đây
           echo "Checking for $JAR_PATH..."
           
           # Liệt kê tất cả nội dung trong target/ để debug
