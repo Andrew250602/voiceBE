@@ -1,6 +1,7 @@
 FROM eclipse-temurin:17-jre-focal
 WORKDIR /app
 # app.jar sẽ được tạo ra trong bước Maven trước đó và copy vào.
-COPY target/my-java-app.jar app.jar
+# Ví dụ: Thay my-java-app.jar bằng tên thực tế
+COPY target/voiceBE-1.0.0-SNAPSHOT.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
