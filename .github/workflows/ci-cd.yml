@@ -1,4 +1,4 @@
-name: Deploy Java Application
+name: Deploy Java Application to Docker Container
 
 on:
   push:
@@ -16,13 +16,13 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v2
         with:
-          java-version: '17'  # Thay đổi theo phiên bản JDK của bạn
+          java-version: '17'
           distribution: 'adopt'
 
       - name: Build with Maven
-        run: mvn clean install  # Xây dựng ứng dụng
+        run: mvn clean install
 
-      - name: Deploy to Server
+      - name: Deploy to Docker Container
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.HOST }}
@@ -31,9 +31,12 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
           chmod 600 private_key.pem
 
-          # Thêm dòng này để chấp nhận host key
           mkdir -p ~/.ssh
           ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
 
-          # Kết nối và triển khai
-          rsync -r --delete-after ./target/ $USER@$HOST:/path/to/deploy/ --private-key=private_key.pem
+          # Kết nối và triển khai vào container
+          ssh -i private_key.pem -p 2222 $USER@$HOST << 'EOF'
+            # Sử dụng lệnh để copy file vào container
+            docker cp target/my-java-app.jar my_container:/path/to/deploy/  # Đường dẫn tới container
+            docker restart my_container  # Khởi động lại container nếu cần
+          EOF
