@@ -40,3 +40,7 @@ jobs:
             docker cp target/my-java-app.jar my_container:/path/to/deploy/  # Đường dẫn tới container
             docker restart my_container  # Khởi động lại container nếu cần
           EOF
+      - name: Test Connection
+        run: |
+          echo "Testing connection to ${{ secrets.HOST }}"
+          ping -c 4 ${{ secrets.HOST }} || exit 1
