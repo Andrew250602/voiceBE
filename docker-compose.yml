@@ -11,7 +11,7 @@ services:
     # 1. THÊM HEALTH CHECK CHO MONGODB
     healthcheck:
       # SỬ DỤNG CÚ PHÁP CMD-SHELL VÀ LỆNH SH ĐỂ ĐẢM BẢO CHẠY
-      test: [ "cmd-shell", "mongo --eval 'db.runCommand({ping: 1})'" ]
+      test: ["CMD-SHELL", "mongo --eval 'db.runCommand({ping: 1})'"]
       interval: 10s
       timeout: 5s
       retries: 5
