@@ -38,7 +38,7 @@ jobs:
       - name: Wait for Java Application Health Check
         run: |
           # ... (Phần Health check không cần sửa)
-          APP_URL="http://localhost:8080/actuator/health"
+          APP_URL="http://localhost:8080/api/auth/create"
           echo "Waiting for $APP_URL..."
           for i in $(seq 1 20); do
             STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET $APP_URL)
