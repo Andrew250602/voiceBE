@@ -1,9 +1,10 @@
 name: CI/Integration Test (Free)
 
 on:
-  pull_request: # Thường chạy khi có PR để kiểm tra code
+  pull_request:
     branches: [main, dev]
-
+  push: # BỔ SUNG TRIGGER NÀY
+    branches: [main, dev]
 jobs:
   integration-test:
     # Sử dụng DIND (Docker-in-Docker) để chạy Docker Compose bên trong Runner
