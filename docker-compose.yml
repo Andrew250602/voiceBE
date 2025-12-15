@@ -10,6 +10,23 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+
+  # Dịch vụ Ứng dụng Java (BẮT BUỘC BỔ SUNG)
+  my-java-app-service:
+    # Tên image phải khớp với tên được build cục bộ trong GitHub Actions
+    image: my-java-app:test-image
+    container_name: java_app_test
+    depends_on:
+      - mongodb # Đảm bảo chạy sau khi MongoDB khởi động
+    # Cấu hình biến môi trường kết nối tới MongoDB
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://root:example@mongodb:27017/testdb?authSource=admin
+      # Thêm các biến môi trường khác của ứng dụng Java (ví dụ: cổng 8080)
+      SERVER_PORT: 8080
+      # Nếu cần chạy test từ bên ngoài container, mở port 8080 ra
+      # ports:
+      #   - "8080:8080"
+
   mongo-experss:
     image: mongo-express
     ports:

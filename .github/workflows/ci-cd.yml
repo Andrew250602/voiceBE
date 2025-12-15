@@ -1,46 +1,55 @@
-name: Deploy Java Application to Docker Container
+name: Continuous Integration & Integration Tests
 
 on:
+  pull_request: # Kích hoạt khi có Pull Request
+    branches: [main, dev]
   push:
-    branches:
-      - main  # Thay đổi theo nhánh bạn muốn triển khai
+    branches: [main, dev]
 
 jobs:
-  build-and-deploy:
+  integration-test-job:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Set up JDK
-        uses: actions/setup-java@v2
+      # 1. Build Ứng dụng Java (Tạo file JAR)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'adopt'
 
       - name: Build with Maven
-        run: mvn clean install
+        run: mvn clean install -DskipTests
+        # Tên file JAR được tạo ra phải khớp với Dockerfile (target/my-java-app.jar)
 
-      - name: Deploy to Docker Container
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          HOST: ${{ secrets.HOST }}
-          USER: ${{ secrets.USER }}
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
-          chmod 600 private_key.pem
+      # 2. Build Docker Image Cục Bộ
+      - name: Build Java App Docker Image (Local)
+        # Sử dụng tag: my-java-app:test-image để khớp với docker-compose.yml
+        run: docker build -t my-java-app:test-image .
 
-          mkdir -p ~/.ssh
-          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+      # 3. Khởi động môi trường Docker Compose (MongoDB + App)
+      - name: Start Docker Compose Environment
+        run: docker-compose up -d
 
-          # Kết nối và triển khai vào container
-          ssh -i private_key.pem -p 2222 $USER@$HOST << 'EOF'
-            # Sử dụng lệnh để copy file vào container
-            docker cp target/my-java-app.jar my_container:/path/to/deploy/  # Đường dẫn tới container
-            docker restart my_container  # Khởi động lại container nếu cần
-          EOF
-      - name: Test Connection
-        run: |
-          echo "Testing connection to ${{ secrets.HOST }}"
-          ping -c 4 ${{ secrets.HOST }} || exit 1
+      - name: Wait for services to be ready
+        # Cần chờ một chút để các dịch vụ (đặc biệt là MongoDB) sẵn sàng
+        uses: nev7n/wait_for_ports@v1
+        with:
+          # Kiểm tra cổng nội bộ của container (ví dụ: 27017)
+          check_for_service: true
+          host: localhost
+          ports: '27017,8080' # Nếu 8080 là cổng ứng dụng Java
+
+      # 4. Chạy Integration Tests (Kiểm tra tích hợp)
+      # Giả định bạn đã cấu hình Maven để chạy các bài test kết nối DB (Integration Tests)
+      - name: Run Integration Tests
+        run: mvn verify
+        # Hoặc lệnh chạy Test của bạn, ví dụ: mvn failsafe:integration-test
+
+      # 5. Dọn dẹp môi trường tạm thời
+      - name: Cleanup Docker Compose Environment
+        if: always() # Luôn chạy bước này dù các bước trước đó thành công hay thất bại
+        run: docker-compose down
