@@ -1,37 +1,30 @@
 version: '3.8'
 services:
-  mongodb:
+  mongodb: # <-- Service 1 (MongoDB Hostname)
     image: mongo:latest
     container_name: mongodb
     ports:
-      - "27017:27017"
-    volumes:
-      - ./data:/data/db
+      - "27017:27017" # Cổng cho bên ngoài Host truy cập (không cần thiết cho ứng dụng Java nội bộ)
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
 
-  # Dịch vụ Ứng dụng Java (BẮT BUỘC BỔ SUNG)
-  my-java-app-service:
-    # Tên image phải khớp với tên được build cục bộ trong GitHub Actions
-    image: my-java-app:test-image
-    container_name: java_app_test
-    depends_on:
-      - mongodb # Đảm bảo chạy sau khi MongoDB khởi động
-    # Cấu hình biến môi trường kết nối tới MongoDB
-    environment:
-      SPRING_DATA_MONGODB_URI: mongodb://root:example@mongodb:27017/testdb?authSource=admin
-      # Thêm các biến môi trường khác của ứng dụng Java (ví dụ: cổng 8080)
-      SERVER_PORT: 8080
-      # Nếu cần chạy test từ bên ngoài container, mở port 8080 ra
-      # ports:
-      #   - "8080:8080"
-
-  mongo-experss:
+  mongo-express: # <-- Service 2 (Công cụ quản lý MongoDB)
     image: mongo-express
     ports:
       - "8081:8081"
     environment:
       ME_CONFIG_MONGODB_USERNAME: root
       ME_CONFIG_MONGODB_PASSWORD: example
-      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_SERVER: mongodb # <-- RẤT QUAN TRỌNG: Sử dụng tên service 'mongodb' làm hostname
+
+  my-java-app-service: # <-- Service 3 (Ứng dụng Java)
+    container_name: my_java_app_container
+    ports:
+      - "8080:8080" # Cổng ứng dụng Java được ánh xạ ra Host
+    depends_on:
+      - mongodb # <-- Đảm bảo MongoDB khởi động trước ứng dụng Java
+    environment:
+      # Cấu hình kết nối cho ứng dụng Java:
+      # SỬ DỤNG TÊN SERVICE 'mongodb' làm Host, không phải 'localhost' hoặc IP
+      SPRING_DATA_MONGODB_URI: mongodb://root:example@mongodb:27017/mydatabase?authSource=admin

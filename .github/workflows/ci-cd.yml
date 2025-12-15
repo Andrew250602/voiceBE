@@ -1,4 +1,4 @@
-name: Continuous Integration & Integration Tests
+name: Deploy Java Application
 
 on:
   pull_request: # Kích hoạt khi có Pull Request
@@ -7,49 +7,71 @@ on:
     branches: [main, dev]
 
 jobs:
-  integration-test-job:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
-      # 1. Build Ứng dụng Java (Tạo file JAR)
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v2
         with:
-          java-version: '17'
+          java-version: '17'  # Thay đổi theo phiên bản JDK của bạn
           distribution: 'adopt'
 
       - name: Build with Maven
-        run: mvn clean install -DskipTests
-        # Tên file JAR được tạo ra phải khớp với Dockerfile (target/my-java-app.jar)
+        run: mvn clean install  # Xây dựng ứng dụng
 
-      # 2. Build Docker Image Cục Bộ
-      - name: Build Java App Docker Image (Local)
-        # Sử dụng tag: my-java-app:test-image để khớp với docker-compose.yml
-        run: docker build -t my-java-app:test-image .
+      - name: Deploy to Server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          HOST: ${{ secrets.HOST }}
+          USER: ${{ secrets.USER }}
+        run: |
+          echo "Connecting to $HOST"
+          echo "Host value: $HOST"
+          ping -c 3 $HOST || echo "Ping failed"
+          echo "SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY"
+          echo "USER: $USER"
+          
+          # In ra giá trị của HOST
+          echo "Attempting to ping $HOST"
+          ping -c 3 $HOST || echo "Ping failed"
 
-      # 3. Khởi động môi trường Docker Compose (MongoDB + App)
-      - name: Start Docker Compose Environment
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+          # Thêm dòng này để chấp nhận host key
+          mkdir -p ~/.ssh
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+
+          rsync -r --delete-after ./target/ $USER@$HOST:/path/to/deploy/
+          # ... (Các bước Build Maven)
+          
+          # Giả định: Chạy Docker Compose trên Runner để kiểm tra
+      - name: Start Services for Integration Test
         run: docker-compose up -d
 
-      - name: Wait for services to be ready
-        # Cần chờ một chút để các dịch vụ (đặc biệt là MongoDB) sẵn sàng
-        uses: nev7n/wait_for_ports@v1
-        with:
-          # Kiểm tra cổng nội bộ của container (ví dụ: 27017)
-          check_for_service: true
-          host: localhost
-          ports: '27017,8080' # Nếu 8080 là cổng ứng dụng Java
-
-      # 4. Chạy Integration Tests (Kiểm tra tích hợp)
-      # Giả định bạn đã cấu hình Maven để chạy các bài test kết nối DB (Integration Tests)
-      - name: Run Integration Tests
-        run: mvn verify
-        # Hoặc lệnh chạy Test của bạn, ví dụ: mvn failsafe:integration-test
-
-      # 5. Dọn dẹp môi trường tạm thời
-      - name: Cleanup Docker Compose Environment
-        if: always() # Luôn chạy bước này dù các bước trước đó thành công hay thất bại
-        run: docker-compose down
+      - name: Wait for Java Application Health Check
+        run: |
+          APP_URL="http://localhost:8080/api/auth" # Đảm bảo endpoint này tồn tại
+      
+          echo "Waiting for application at $APP_URL to be ready..."
+      
+          # Lặp lại kiểm tra tối đa 20 lần (mỗi lần cách nhau 5 giây)
+          for i in $(seq 1 20); do
+            # Lệnh curl: -s (im lặng), -o /dev/null (bỏ qua nội dung), -w "%{http_code}" (chỉ in mã trạng thái)
+            STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET $APP_URL)
+      
+            if [ "$STATUS_CODE" -eq 200 ] || [ "$STATUS_CODE" -eq 204 ]; then
+              echo "✅ Application is UP (Status $STATUS_CODE)!"
+              exit 0 # Thành công
+            fi
+      
+            echo "Attempt $i: App not ready (Status: $STATUS_CODE). Waiting 5 seconds..."
+            sleep 5
+          done
+      
+          echo "❌ Application failed to start or pass health check within timeout."
+          exit 1 # Thất bại, dừng Job
