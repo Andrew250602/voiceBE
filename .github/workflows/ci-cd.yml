@@ -24,7 +24,25 @@ jobs:
       # 2. Build ứng dụng Java (Tạo JAR)
       - name: Build with Maven
         run: mvn clean install -DskipTests
-
+      # BƯỚC BỔ SUNG: XÁC NHẬN SỰ TỒN TẠI CỦA FILE JAR
+      - name: Verify JAR File Existence
+        run: |
+          JAR_PATH="target/voiceBE-1.0.0-SNAPSHOT.jar"
+          
+          echo "Checking for $JAR_PATH..."
+          
+          # Liệt kê tất cả nội dung trong target/ để debug
+          echo "Contents of target/:"
+          ls -l target/
+          
+          # Kiểm tra sự tồn tại của file
+          if [ -f "$JAR_PATH" ]; then
+            echo "✅ File $JAR_PATH found. Proceeding to Docker Build."
+          else
+            echo "❌ ERROR: File $JAR_PATH was NOT found after Maven Build."
+            echo "Possible reasons: Maven build failed, or file name is incorrect."
+            exit 1 # Dừng workflow nếu file không tồn tại
+          fi
       # 3. Build Docker Image cho ứng dụng Java (Cần Dockerfile)
       - name: Build Java App Docker Image
         run: docker build -t my-java-app:latest . -f Dockerfile # Build local image
