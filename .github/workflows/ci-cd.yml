@@ -1,40 +1,48 @@
-name: CI
+name: Deploy Java Application
 
 on:
   push:
     branches:
-      - main
+      - main  # Thay đổi theo nhánh bạn muốn triển khai
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
-    services:
-      ssh-server:
-        build:
-          context: .
-          dockerfile: Dockerfile
-        ports:
-          - 22:22
-        env:
-          ROOT_PASSWORD: password  # Có thể sử dụng secret trong thực tế
-
     steps:
-      - name: Kiểm tra mã nguồn
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Khởi động SSH Server
-        run: |
-          docker run -d -p 2222:22 ssh-server
-          # Chờ một chút để dịch vụ sẵn sàng
-          sleep 10
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'  # Thay đổi theo phiên bản JDK của bạn
+          distribution: 'adopt'
 
-      - name: Kết nối đến SSH Server
-        run: |
-          ssh root@localhost -p 2222 "echo 'Connection successful!'"
-          # Bạn có thể chạy thêm các lệnh khác trên SSH server từ đây
+      - name: Build with Maven
+        run: mvn clean install  # Xây dựng ứng dụng
 
-      - name: Dọn dẹp
-        if: always()
+      - name: Deploy to Server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          HOST: ${{ secrets.HOST }}
+          USER: ${{ secrets.USER }}
         run: |
-          docker stop $(docker ps -q --filter ancestor=ssh-server)
+          echo "Connecting to $HOST"
+          echo "Host value: $HOST"
+          ping -c 3 $HOST || echo "Ping failed"
+          echo "SSH_PRIVATE_KEY: $SSH_PRIVATE_KEY"
+          echo "USER: $USER"
+          
+          # In ra giá trị của HOST
+          echo "Attempting to ping $HOST"
+          ping -c 3 $HOST || echo "Ping failed"
+
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
+
+          # Thêm dòng này để chấp nhận host key
+          mkdir -p ~/.ssh
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+
+          rsync -r --delete-after ./target/ $USER@$HOST:/path/to/deploy/
