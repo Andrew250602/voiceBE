@@ -1,7 +1,4 @@
-# Sử dụng tag có hậu tố -buster (phổ biến)
-FROM openjdk:17-jre-slim-buster
-# HOẶC tag đơn giản hơn nếu nó tồn tại
-# FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre-focal
 WORKDIR /app
 # app.jar sẽ được tạo ra trong bước Maven trước đó và copy vào.
 COPY target/my-java-app.jar app.jar
