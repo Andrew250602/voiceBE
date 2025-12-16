@@ -5,6 +5,7 @@ on:
     branches: [main, dev]
   push:
     branches: [main, dev]
+
 jobs:
   integration-test:
     runs-on: ubuntu-latest
@@ -13,63 +14,70 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 1. Thiết lập Java
+      # 1. Install Docker
+      - name: Set up Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      # 2. Install Docker Compose
+      - name: Install Docker Compose
+        run: |
+          DOCKER_COMPOSE_VERSION=1.29.2  # Specify the Docker Compose version
+          sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
+      # 3. Set up JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'adopt'
 
-      # 2. Build ứng dụng Java (Tạo JAR)
+      # 4. Build ứng dụng Java (Tạo JAR)
       - name: Build with Maven
         run: mvn clean install -DskipTests || { echo "Maven build failed"; exit 1; }
 
-      # BỎ BƯỚC Verify JAR File Existence ĐÃ BỊ LỖI CÚ PHÁP SHELL
-
-      # 3. Build Docker Image cho ứng dụng Java (Sử dụng Dockerfile đã sửa COPY target/*.jar)
+      # 5. Build Docker Image cho ứng dụng Java (Sử dụng Dockerfile đã sửa COPY target/*.jar)
       - name: Build Java App Docker Image
         run: docker build -t my-java-app:latest . -f Dockerfile || { echo "Docker build failed"; exit 1; }
 
-      # 4. Chạy Docker Compose
+      # 6. Chạy Docker Compose
       - name: Start services (Java App + MongoDB)
         run: docker-compose up -d || { echo "Docker Compose failed"; exit 1; }
 
-      # 5. Check Logs and Exit Codes
+      # 7. Check Logs and Exit Codes
       - name: Check Application Logs
         run: |
           CONTAINER_NAME="java_app_test"
-          docker logs $CONTAINER_NAME || { echo "Failed to retrieve logs for $CONTAINER_NAME"; exit 1; }
-          docker logs mongodb || { echo "Failed to retrieve MongoDB logs"; exit 1; }
-      # BƯỚC CẦN DI CHUYỂN RA NGOÀI ĐỂ CÙNG CẤP VỚI CÁC BƯỚC KHÁC
-      - name: Check Java Application Logs
-        run: |
-          sleep 5 
-          CONTAINER_NAME="java_app_test"
-          echo "--- CHECKING $CONTAINER_NAME LOGS ---"
-          docker logs $CONTAINER_NAME
-          EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' $CONTAINER_NAME 2>/dev/null || echo "N/A")
-          echo "Container Exit Code: $EXIT_CODE"
-          if [ "$EXIT_CODE" != "0" ] && [ "$EXIT_CODE" != "N/A" ]; then
-             echo "--- ❌ ERROR: JAVA CONTAINER CRASHED ---"
-             exit 1 
+          if ! docker logs $CONTAINER_NAME; then
+            echo "Failed to retrieve logs for $CONTAINER_NAME"
+            exit 1
           fi
-          echo "--------------------------------"
-      # 5. Health Check
+          if ! docker logs mongodb; then
+            echo "Failed to retrieve MongoDB logs"
+            exit 1
+          fi
+
+      # 8. Health Check
       - name: Wait for Java Application Health Check
         run: |
           APP_URL="http://localhost:8080/"
           for i in $(seq 1 20); do
             STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET $APP_URL)
+            echo "Waiting for $APP_URL... Current Status Code: $STATUS_CODE"
             if [ "$STATUS_CODE" -eq 200 ] || [ "$STATUS_CODE" -eq 204 ]; then
               echo "✅ App is UP!"
               exit 0 
             fi
-            echo "Waiting for $APP_URL... Current Status Code: $STATUS_CODE"
             sleep 5
           done
           echo "❌ App failed to start."
           exit 1
-      # 6. Dọn dẹp (ĐÃ SỬA CÚ PHÁP)
+
+      # 9. Dọn dẹp
       - name: Stop services
         if: always()
-        run: docker compose down || { echo "Docker compose down failed"; exit 1; }
+        run: docker-compose down || { echo "Docker compose down failed"; exit 1; }
