@@ -30,7 +30,15 @@ jobs:
 
       # 4. Chạy Docker Compose
       - name: Start services (Java App + MongoDB)
-        run: docker-compose up -d || { echo "Docker Compose failed"; exit 1; }
+        run: |
+          # Verify Docker Compose installation
+          docker-compose --version || { echo "Docker Compose not installed or not found"; exit 1; }
+          
+          # Check Docker service status
+          sudo systemctl status docker || { echo "Docker service is not running"; exit 1; }
+          
+          # Start the services
+          docker-compose up -d || { echo "Docker Compose failed"; exit 1; }
 
       # 5. Check Logs and Exit Codes
       - name: Check Application Logs
