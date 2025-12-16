@@ -9,6 +9,8 @@ on:
 jobs:
   integration-test:
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_STEP_DEBUG: true  # Thêm dòng này
 
     steps:
       - name: Checkout code
