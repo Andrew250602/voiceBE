@@ -43,8 +43,8 @@ jobs:
       - name: Start services (Java App + MongoDB)
         run: |
           docker-compose up -d || { echo "Docker Compose failed"; exit 1; }
-
-      # Bước để xem logs của MongoDB
+          
+          # Bước để xem logs của MongoDB ngay lập tức
       - name: View MongoDB Logs
         run: docker logs mongodb || { echo "Failed to retrieve MongoDB logs"; exit 1; }
 
