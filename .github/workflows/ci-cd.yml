@@ -30,9 +30,10 @@ jobs:
       - name: Build Java App Docker Image
         run: docker build -t my-java-app:latest . -f Dockerfile # Tag: my-java-app:latest
 
-      # 4. Chạy Docker Compose (ĐÃ SỬA CÚ PHÁP)
+      # 4. Chạy Docker Compose
       - name: Start services (Java App + MongoDB)
-        run: docker compose up -d
+        run: docker-compose up -d
+
       # 5. Check Logs and Exit Codes
       - name: Check Application Logs
         run: |
@@ -50,7 +51,6 @@ jobs:
           
           echo "--- CHECKING mongodb LOGS ---"
           docker logs mongodb
-
       # BƯỚC CẦN DI CHUYỂN RA NGOÀI ĐỂ CÙNG CẤP VỚI CÁC BƯỚC KHÁC
       - name: Check Java Application Logs
         run: |
