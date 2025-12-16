@@ -44,7 +44,9 @@ jobs:
         run: |
           docker-compose up -d || { echo "Docker Compose failed"; exit 1; }
 
-      # Các bước log, health check như trước...
+      # Bước để xem logs của MongoDB
+      - name: View MongoDB Logs
+        run: docker logs mongodb || { echo "Failed to retrieve MongoDB logs"; exit 1; }
 
       - name: Stop services
         if: always()
