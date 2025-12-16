@@ -10,11 +10,11 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
     # 1. THÊM HEALTH CHECK CHO MONGODB
     healthcheck:
-      test: [ "CMD-SHELL", "nc -z localhost 27017 || exit 1" ] # <<< THAY THẾ BẰNG CÁCH KIỂM TRA CỔNG TCP
+      test: [ "CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })" ]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 30s
 
   mongo-express: # <-- Service 2 (Công cụ quản lý MongoDB)
     image: mongo-express
