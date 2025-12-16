@@ -5,6 +5,7 @@ on:
     branches: [main, dev]
   push:
     branches: [main, dev]
+
 jobs:
   integration-test:
     runs-on: ubuntu-latest
@@ -13,45 +14,41 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 1. Thiết lập Java
+      # 1. Install Docker
+      - name: Set up Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      # 2. Install Docker Compose
+      - name: Install Docker Compose
+        run: |
+          DOCKER_COMPOSE_VERSION=1.29.2
+          sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
+      # 3. Thiết lập Java
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'adopt'
 
-      # 2. Build ứng dụng Java (Tạo JAR)
+      # 4. Build ứng dụng Java (Tạo JAR)
       - name: Build with Maven
         run: mvn clean install -DskipTests
 
-      # BỎ BƯỚC Verify JAR File Existence ĐÃ BỊ LỖI CÚ PHÁP SHELL
-
-      # 3. Build Docker Image cho ứng dụng Java (Sử dụng Dockerfile đã sửa COPY target/*.jar)
+      # 5. Build Docker Image cho ứng dụng Java
       - name: Build Java App Docker Image
-        run: docker build -t my-java-app:latest . -f Dockerfile # Tag: my-java-app:latest
+        run: docker build -t my-java-app:latest . -f Dockerfile
 
-      # 4. Chạy Docker Compose
+      # 6. Chạy Docker Compose
       - name: Start services (Java App + MongoDB)
         run: docker-compose up -d
 
-      # 5. Check Logs and Exit Codes
-      - name: Check Application Logs
-        run: |
-          sleep 5 
-          CONTAINER_NAME="java_app_test"
-          echo "--- CHECKING $CONTAINER_NAME LOGS ---"
-          docker logs $CONTAINER_NAME
-          EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' $CONTAINER_NAME 2>/dev/null || echo "N/A")
-          echo "Container Exit Code: $EXIT_CODE"
-          if [ "$EXIT_CODE" != "0" ] && [ "$EXIT_CODE" != "N/A" ]; then
-             echo "--- ❌ ERROR: JAVA CONTAINER CRASHED ---"
-             exit 1 
-          fi
-          echo "--------------------------------"
-          
-          echo "--- CHECKING mongodb LOGS ---"
-          docker logs mongodb
-      # BƯỚC CẦN DI CHUYỂN RA NGOÀI ĐỂ CÙNG CẤP VỚI CÁC BƯỚC KHÁC
+      # 7. Check Java Application Logs
       - name: Check Java Application Logs
         run: |
           sleep 5 
@@ -65,10 +62,10 @@ jobs:
              exit 1 
           fi
           echo "--------------------------------"
-      # 5. Health Check
+
+      # 8. Wait for Java Application Health Check
       - name: Wait for Java Application Health Check
         run: |
-          # ... (Phần Health check không cần sửa)
           APP_URL="http://localhost:8080/"
           echo "Waiting for $APP_URL..."
           for i in $(seq 1 20); do
@@ -82,7 +79,7 @@ jobs:
           echo "❌ App failed to start."
           exit 1
 
-      # 6. Dọn dẹp (ĐÃ SỬA CÚ PHÁP)
+      # 9. Dọn dẹp
       - name: Stop services
         if: always()
-        run: docker compose down
+        run: docker-compose down
