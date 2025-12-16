@@ -9,7 +9,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
     healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })", "--username", "root", "--password", "example", "--authenticationDatabase", "admin" ]
+      test: [ "CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })", "--username", "root", "--password", "example", "--authenticationDatabase", "admin", "admin" ]
       interval: 10s
       timeout: 5s
       retries: 10
