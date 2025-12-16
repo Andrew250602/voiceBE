@@ -1,14 +1,13 @@
 version: '3.8'
 services:
-  mongodb: # <-- Service 1 (MongoDB Hostname)
+  mongodb:
     image: mongo:latest
     container_name: mongodb
     ports:
-      - "27017:27017" # Cổng cho bên ngoài Host truy cập (không cần thiết cho ứng dụng Java nội bộ)
+      - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
-    # 1. THÊM HEALTH CHECK CHO MONGODB
     healthcheck:
       test: [ "CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })" ]
       interval: 10s
@@ -16,26 +15,22 @@ services:
       retries: 10
       start_period: 30s
 
-  mongo-express: # <-- Service 2 (Công cụ quản lý MongoDB)
+  mongo-express:
     image: mongo-express
-
     ports:
       - "8081:8081"
     environment:
       ME_CONFIG_MONGODB_USERNAME: root
       ME_CONFIG_MONGODB_PASSWORD: example
-      ME_CONFIG_MONGODB_SERVER: mongodb # <-- RẤT QUAN TRỌNG: Sử dụng tên service 'mongodb' làm hostname
+      ME_CONFIG_MONGODB_SERVER: mongodb
 
-  my-java-app-service: # <-- Service 3 (Ứng dụng Java)
+  my-java-app-service:
     container_name: java_app_test
-    image: my-java-app:latest # <<< DÒNG NÀY PHẢI CÓ VÀ PHẢI KHỚP!
+    build: .  # This assumes the Dockerfile is in the same directory as the docker-compose.yml
     ports:
-      - "8080:8080" # Cổng ứng dụng Java được ánh xạ ra Host
+      - "8080:8080"
     depends_on:
       mongodb:
-        condition: service_healthy # Chỉ chạy khi MongoDB sẵn sàng
-
+        condition: service_healthy
     environment:
-      # Cấu hình kết nối cho ứng dụng Java:
-      # SỬ DỤNG TÊN SERVICE 'mongodb' làm Host, không phải 'localhost' hoặc IP
       SPRING_DATA_MONGODB_URI: mongodb://root:example@mongodb:27017/mydatabase?authSource=admin
