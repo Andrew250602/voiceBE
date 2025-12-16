@@ -9,7 +9,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
     healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })" ]
+      test: [ "CMD", "mongo", "--eval", "db.runCommand({ ping: 1 })", "--username", "root", "--password", "example", "--authenticationDatabase", "admin" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -33,4 +33,4 @@ services:
       mongodb:
         condition: service_healthy
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://root:example@localhost:27017/mongodb?authSource=admin
+      SPRING_DATA_MONGODB_URI: mongodb://root:example@mongodb:27017/mongodb?authSource=admin
