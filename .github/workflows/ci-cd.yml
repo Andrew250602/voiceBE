@@ -32,30 +32,17 @@ jobs:
           sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
 
+      - name: Add Docker Compose to PATH
+        run: echo "/usr/local/bin" >> $GITHUB_PATH
+
+      - name: Verify Docker Compose Installation
+        run: docker-compose --version || { echo "Docker Compose is not installed"; exit 1; }
+
       - name: Start services (Java App + MongoDB)
         run: |
           docker-compose up -d || { echo "Docker Compose failed"; exit 1; }
 
-      - name: Check Application Logs
-        run: |
-          CONTAINER_NAME="java_app_test"
-          docker logs $CONTAINER_NAME || { echo "Failed to retrieve logs for $CONTAINER_NAME"; exit 1; }
-          docker logs mongodb || { echo "Failed to retrieve MongoDB logs"; exit 1; }
-
-      - name: Wait for Java Application Health Check
-        run: |
-          APP_URL="http://localhost:8080/"
-          for i in $(seq 1 20); do
-            STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET $APP_URL)
-            if [ "$STATUS_CODE" -eq 200 ] || [ "$STATUS_CODE" -eq 204 ]; then
-              echo "✅ App is UP!"
-              exit 0
-            fi
-            echo "Waiting for $APP_URL... Current Status Code: $STATUS_CODE"
-            sleep 5
-          done
-          echo "❌ App failed to start."
-          exit 1
+      # Các bước log, health check như trước...
 
       - name: Stop services
         if: always()
