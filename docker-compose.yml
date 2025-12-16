@@ -33,4 +33,4 @@ services:
       mongodb:
         condition: service_healthy
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://root:example@mongodb:27017/mydatabase?authSource=admin
+      SPRING_DATA_MONGODB_URI: mongodb://root:example@localhost:27017/mongodb?authSource=admin
