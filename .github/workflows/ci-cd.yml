@@ -40,15 +40,46 @@ jobs:
       - name: Verify Docker Compose Installation
         run: docker-compose --version || { echo "Docker Compose is not installed"; exit 1; }
 
+#      - name: Start services (Java App + MongoDB)
+#        run: |
+#          docker-compose up -d || { echo "Docker Compose failed"; exit 1; }
+#      - name: Wait for MongoDB to initialize
+#        run: sleep 30  # Thời gian chờ có thể điều chỉnh
+#          # Bước để xem logs của MongoDB ngay lập tức
+#      - name: View MongoDB Logs
+#        run: docker logs mongodb || { echo "Failed to retrieve MongoDB logs"; exit 1; }
+
       - name: Start services (Java App + MongoDB)
         run: |
-          docker-compose up -d || { echo "Docker Compose failed"; exit 1; }
-      - name: Wait for MongoDB to initialize
-        run: sleep 30  # Thời gian chờ có thể điều chỉnh
-          # Bước để xem logs của MongoDB ngay lập tức
-      - name: View MongoDB Logs
-        run: docker logs mongodb || { echo "Failed to retrieve MongoDB logs"; exit 1; }
+          docker-compose up -d
 
+      - name: Debug Network & Containers
+        run: |
+          echo "Danh sách các container đang chạy:"
+          docker ps
+          echo "Kiểm tra IP nội bộ của các container:"
+          docker inspect -f '{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aq)
+
+      - name: Wait for Java App to be ready
+        run: |
+          echo "Đang chờ ứng dụng Java phản hồi tại localhost:8080..."
+          # Thử curl tối đa 12 lần, mỗi lần cách nhau 5 giây (tổng 60s)
+          for i in {1..12}; do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "Cổng 8080 đã sẵn sàng!"
+              exit 0
+            fi
+            echo "Thử lại lần $i..."
+            sleep 5
+          done
+          echo "LỖI: Ứng dụng không phản hồi sau 1 phút!"
+          docker logs $(docker ps -q --filter "ancestor=my-java-app:latest")
+          exit 1
+
+      - name: Test Curl Internal
+        run: |
+          # Thử gọi một endpoint cụ thể của bạn
+          curl -v http://localhost:8080/api/your-endpoint
       - name: Stop services
         if: always()
         run: docker-compose down || { echo "Docker compose down failed"; exit 1; }
