@@ -24,7 +24,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         String[] permitApis = {
                 "/api/auth/**",
-                "/health",           // Endpoint bạn đang test
+                "/api/health",           // Endpoint bạn đang test
                 "/status",          // Endpoint Health Check phổ biến khác
                 "/actuator/**"      // Nếu bạn dùng Spring Boot Actuator
         };
