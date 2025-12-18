@@ -26,7 +26,9 @@ jobs:
         run: mvn clean install -DskipTests || { echo "Maven build failed"; exit 1; }
 
       - name: Build Java App Docker Image
-        run: docker build -t my-java-app:latest . -f Dockerfile || { echo "Docker build failed"; exit 1; }
+        run: |
+          mvn clean package -DskipTests
+          docker build --no-cache -t my-java-app:latest .
 
       # Bước cài đặt Docker Compose
       - name: Install Docker Compose
