@@ -79,7 +79,12 @@ jobs:
       - name: Test Curl Internal
         run: |
           # Thử gọi một endpoint cụ thể của bạn
-          curl -v http://localhost:8080/api/your-endpoint
+          curl -v http://localhost:8080/api/health
+
+      - name: Check Container Status
+        run: |
+          docker ps -a
+          docker logs <tên_container_java>
       - name: Stop services
         if: always()
         run: docker-compose down || { echo "Docker compose down failed"; exit 1; }
