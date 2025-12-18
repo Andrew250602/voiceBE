@@ -84,7 +84,7 @@ jobs:
       - name: Check Container Status
         run: |
           docker ps -a
-          docker logs <tên_container_java>
+          docker logs java_app_test
       - name: Stop services
         if: always()
         run: docker-compose down || { echo "Docker compose down failed"; exit 1; }
