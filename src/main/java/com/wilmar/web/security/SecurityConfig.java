@@ -22,19 +22,17 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        String[] permitApis = {
-                "/api/auth/**",
-                "/api/health",           // Endpoint bạn đang test
-                "/status",          // Endpoint Health Check phổ biến khác
-                "/actuator/**"      // Nếu bạn dùng Spring Boot Actuator
-        };
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.requestMatchers(permitApis).permitAll())
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/health", "/api/auth/**", "/status").permitAll()
+                        .anyRequest().authenticated()
+                );
+
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
     public CorsConfigurationSource corsConfigurationSource() {

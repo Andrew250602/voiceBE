@@ -96,7 +96,3 @@ jobs:
       - name: Stop services
         if: always()
         run: docker-compose down
-
-      - name: Stop services
-        if: always()
-        run: docker-compose down || { echo "Docker compose down failed"; exit 1; }
