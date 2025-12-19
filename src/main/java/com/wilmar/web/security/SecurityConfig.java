@@ -36,7 +36,7 @@ public class SecurityConfig {
         return http.build();
     }
     public CorsConfigurationSource corsConfigurationSource() {
-        String[] cors = {"http://localhost:3000"};
+        String[] cors = {"http://localhost:5173"};
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         final CorsConfiguration configuration = new CorsConfiguration();
         for (String origin :
