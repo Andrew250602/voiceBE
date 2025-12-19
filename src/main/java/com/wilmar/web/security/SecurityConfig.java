@@ -35,29 +35,30 @@ public class SecurityConfig {
 
         return http.build();
     }
+
     public CorsConfigurationSource corsConfigurationSource() {
-        String[] cors = {"http://localhost:5173"};
-        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        final CorsConfiguration configuration = new CorsConfiguration();
-        for (String origin :
-                cors) {
-            configuration.addAllowedOrigin(origin);
-        }
-        configuration.setAllowedOrigins(List.of("*"));
-        configuration.setAllowedMethods(List.of("*"));
-        configuration.setAllowedHeaders(List.of("*"));
+        CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowCredentials(false);
+        // 1. CHỈ ĐỊNH RÕ CÁC NGUỒN ĐƯỢC PHÉP
+        // Không dùng setAllowedOrigins(List.of("*")) nếu bạn muốn dùng setAllowCredentials(true)
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",           // Cho lúc code dưới máy (Dev)
+                "https://andrew250602.github.io"   // Cho lúc chạy trên GitHub Pages (Prod)
+        ));
 
-        configuration.addAllowedHeader("**");
+        // 2. CẤU HÌNH METHODS
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
-        configuration.addAllowedMethod("OPTIONS");
-        configuration.addAllowedMethod("POST");
-        configuration.addAllowedMethod("GET");
-        configuration.addAllowedMethod("PUT");
-        configuration.addAllowedMethod("DELETE");
-        configuration.addAllowedMethod("JWT-TOKEN");
+        // 3. CẤU HÌNH HEADERS
+        // "Authorization" và "Content-Type" là quan trọng nhất cho JWT
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
 
+        // 4. CREDENTIALS
+        // Nếu bạn gửi JWT qua Header thì để true hoặc false đều được,
+        // nhưng nếu dùng Cookie thì bắt buộc phải là true.
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
