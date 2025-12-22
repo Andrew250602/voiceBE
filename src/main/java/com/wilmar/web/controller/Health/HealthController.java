@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/health")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "https://andrew250602.github.io/voiceFE/")
 public class HealthController {
     @GetMapping("")
     public String checkHealth() {
