@@ -7,10 +7,10 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  integration-test:
     runs-on: ubuntu-latest
     env:
-      ACTIONS_STEP_DEBUG: true
+      ACTIONS_STEP_DEBUG: true  # Thêm dòng này
 
     steps:
       - name: Checkout code
@@ -30,16 +30,7 @@ jobs:
           mvn clean package -DskipTests
           docker build --no-cache -t my-java-app:latest .
 
-  docker-setup:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout code (again for Docker Compose)
-        uses: actions/checkout@v3
-
-      - name: Install Docker
-        run: sudo apt-get install -y docker.io
-
+      # Bước cài đặt Docker Compose
       - name: Install Docker Compose
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -51,10 +42,15 @@ jobs:
       - name: Verify Docker Compose Installation
         run: docker-compose --version || { echo "Docker Compose is not installed"; exit 1; }
 
-  integration-test:
-    runs-on: ubuntu-latest
-    needs: docker-setup
-    steps:
+#      - name: Start services (Java App + MongoDB)
+#        run: |
+#          docker-compose up -d || { echo "Docker Compose failed"; exit 1; }
+#      - name: Wait for MongoDB to initialize
+#        run: sleep 30  # Thời gian chờ có thể điều chỉnh
+#          # Bước để xem logs của MongoDB ngay lập tức
+#      - name: View MongoDB Logs
+#        run: docker logs mongodb || { echo "Failed to retrieve MongoDB logs"; exit 1; }
+
       - name: Start services (Java App + MongoDB)
         run: |
           docker-compose up -d
@@ -69,6 +65,7 @@ jobs:
       - name: Wait for Java App to be ready
         run: |
           echo "Đang chờ ứng dụng Java phản hồi tại localhost:8080..."
+          # Thử curl tối đa 12 lần, mỗi lần cách nhau 5 giây (tổng 60s)
           for i in {1..12}; do
             if curl -s http://localhost:8080 > /dev/null; then
               echo "Cổng 8080 đã sẵn sàng!"
@@ -83,13 +80,13 @@ jobs:
 
       - name: Test Curl Internal
         run: |
+          # Thử gọi một endpoint cụ thể của bạn
           curl -v http://localhost:8080/api/health
 
       - name: Check Container Status
         run: |
           docker ps -a
           docker logs java_app_test
-
       - name: Final Verification
         run: |
           echo "Dừng lại 1 giây để kiểm tra lần cuối..."
