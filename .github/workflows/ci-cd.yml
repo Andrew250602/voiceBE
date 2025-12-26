@@ -42,15 +42,6 @@ jobs:
       - name: Verify Docker Compose Installation
         run: docker-compose --version || { echo "Docker Compose is not installed"; exit 1; }
 
-#      - name: Start services (Java App + MongoDB)
-#        run: |
-#          docker-compose up -d || { echo "Docker Compose failed"; exit 1; }
-#      - name: Wait for MongoDB to initialize
-#        run: sleep 30  # Thời gian chờ có thể điều chỉnh
-#          # Bước để xem logs của MongoDB ngay lập tức
-#      - name: View MongoDB Logs
-#        run: docker logs mongodb || { echo "Failed to retrieve MongoDB logs"; exit 1; }
-
       - name: Start services (Java App + MongoDB)
         run: |
           docker-compose up -d
